@@ -1,0 +1,25 @@
+# macOS system files
+.DS_Store
+
+# Python files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environments
+.env
+.venv
+env/
+venv/
+pip-log.txt
+
+# IDES
+.vscode/
+.idea/
+
+# Emacs backup files
+*~
+
+# Emacs auto-save files
+\#*\#
