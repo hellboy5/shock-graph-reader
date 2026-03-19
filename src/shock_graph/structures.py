@@ -26,6 +26,34 @@ class SamplePoint:
     phi: float
 
 
+@dataclass
+class EdgeShapeFeatures:
+    """Stores the computed geometric features for an edge.
+
+    Attributes:
+        s_length: Arc-length of the shock edge.
+        s_curve: Total absolute curvature of the shock edge.
+        s_angle: Total absolute angle change of the shock edge.
+        p_length: Arc-length of the plus (left) boundary.
+        p_curve: Total absolute curvature of the plus boundary.
+        p_angle: Total absolute angle change of the plus boundary.
+        m_length: Arc-length of the minus (right) boundary.
+        m_curve: Total absolute curvature of the minus boundary.
+        m_angle: Total absolute angle change of the minus boundary.
+        poly_area: Area of the polygon formed by the shock and boundaries.
+    """
+    s_length: float = 0.0
+    s_curve: float = 0.0
+    s_angle: float = 0.0
+    p_length: float = 0.0
+    p_curve: float = 0.0
+    p_angle: float = 0.0
+    m_length: float = 0.0
+    m_curve: float = 0.0
+    m_angle: float = 0.0
+    poly_area: float = 0.0
+
+
 class Node:
     """A point in the Shock DAG with GNN-ready connectivity metrics.
 
@@ -93,6 +121,7 @@ class Edge:
         source: The originating Node.
         target: The destination Node.
         samples: A list of SamplePoint objects describing the shock curve.
+        features: The computed geometric features for this edge.
     """
 
     def __init__(
@@ -114,10 +143,28 @@ class Edge:
         self.source = source
         self.target = target
         self.samples = samples
+        self.features: Optional[EdgeShapeFeatures] = None
 
         # Automatic connectivity registration
         self.source.outgoing_edges.append(self)
         self.target.incoming_edges.append(self)
+
+    # --- Feature Accessors ---
+
+    @property
+    def s_length(self) -> float:
+        """Returns the length of the shock curve."""
+        return self.features.s_length if self.features else 0.0
+
+    @property
+    def s_curve(self) -> float:
+        """Returns the total curvature of the shock curve."""
+        return self.features.s_curve if self.features else 0.0
+
+    @property
+    def poly_area(self) -> float:
+        """Returns the area of the polygon formed by the shock boundaries."""
+        return self.features.poly_area if self.features else 0.0
 
 
 class ShockGraph:

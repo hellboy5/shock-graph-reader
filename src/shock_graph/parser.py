@@ -4,6 +4,7 @@ import math
 import re
 from typing import Dict
 
+from .feature_extractor import ShockFeatureExtractor
 from .structures import Edge, Node, SamplePoint, ShockGraph
 
 
@@ -81,6 +82,11 @@ class ShockParser:
                 graph.edges.append(
                     Edge(e_id, src_node, tgt_node, edge_samples)
                 )
+
+        # 3. Explicit Feature Extraction
+        # Automatically compute geometric properties for all populated edges
+        for edge in graph.edges:
+            edge.features = ShockFeatureExtractor.extract_edge_features(edge)
 
         return graph
 
