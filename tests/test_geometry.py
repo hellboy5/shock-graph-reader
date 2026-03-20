@@ -72,12 +72,8 @@ class TestAnalyticalGeometry(unittest.TestCase):
 
         length, total_curv, total_angle = geometry.compute_curve_stats(curve)
 
-        # Convert raw K sum to integral by multiplying by step size (ds)
-        ds = length / (num_points - 1)
-        integral_curv = total_curv * ds
-
         self.assertAlmostEqual(length, math.pi * radius, delta=0.01)
-        self.assertAlmostEqual(integral_curv, math.pi, delta=0.05)
+        self.assertAlmostEqual(total_curv, math.pi, delta=0.05)
         self.assertAlmostEqual(total_angle, math.pi, delta=0.05)
 
     def test_parabola(self):
@@ -92,11 +88,9 @@ class TestAnalyticalGeometry(unittest.TestCase):
 
         length, total_curv, total_angle = geometry.compute_curve_stats(curve)
         
-        ds = length / (num_points - 1)
-        integral_curv = total_curv * ds
         expected_val = 2.0 * math.atan(2.0)
 
-        self.assertAlmostEqual(integral_curv, expected_val, delta=0.05)
+        self.assertAlmostEqual(total_curv, expected_val, delta=0.05)
         self.assertAlmostEqual(total_angle, expected_val, delta=0.05)
 
     def test_half_sine_wave(self):
@@ -112,10 +106,7 @@ class TestAnalyticalGeometry(unittest.TestCase):
 
         length, total_curv, total_angle = geometry.compute_curve_stats(curve)
 
-        ds = length / (num_points - 1)
-        integral_curv = total_curv * ds
-
-        self.assertAlmostEqual(integral_curv, -math.pi / 2.0, delta=0.05)
+        self.assertAlmostEqual(total_curv, -math.pi / 2.0, delta=0.05)
         self.assertAlmostEqual(total_angle, math.pi / 2.0, delta=0.05)
 
     def test_full_ellipse(self):
@@ -131,11 +122,24 @@ class TestAnalyticalGeometry(unittest.TestCase):
 
         length, total_curv, total_angle = geometry.compute_curve_stats(curve)
 
-        ds = length / (num_points - 1)
-        integral_curv = total_curv * ds
-
-        self.assertAlmostEqual(integral_curv, 2 * math.pi, delta=0.05)
+        self.assertAlmostEqual(total_curv, 2 * math.pi, delta=0.05)
         self.assertAlmostEqual(total_angle, 2 * math.pi, delta=0.05)
+
+    def test_resolution_invariance(self):
+        """Total curvature and angle change must be independent of sampling density."""
+        # 100 points
+        angles_100 = np.linspace(0, math.pi, 100)
+        curve_100 = [(5.0 * math.cos(a), 5.0 * math.sin(a)) for a in angles_100]
+        _, curv_100, angle_100 = geometry.compute_curve_stats(curve_100)
+        
+        # 1000 points
+        angles_1000 = np.linspace(0, math.pi, 1000)
+        curve_1000 = [(5.0 * math.cos(a), 5.0 * math.sin(a)) for a in angles_1000]
+        _, curv_1000, angle_1000 = geometry.compute_curve_stats(curve_1000)
+
+        # These should match perfectly despite the 10x difference in points
+        self.assertAlmostEqual(curv_100, curv_1000, places=2)
+        self.assertAlmostEqual(angle_100, angle_1000, places=2)
 
     def test_poly_area_square(self):
         """Tests Shoelace area formula on a perfect square."""
