@@ -85,8 +85,7 @@ class ShockParser:
 
         # 3. Explicit Feature Extraction
         # Automatically compute geometric properties for all populated edges
-        for edge in graph.edges:
-            edge.features = ShockFeatureExtractor.extract_edge_features(edge)
+        ShockFeatureExtractor.process_graph(graph)
 
         return graph
 

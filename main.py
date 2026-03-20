@@ -9,7 +9,7 @@ from src.shock_graph.parser import ShockParser
 from src.shock_graph.structures import ShockGraph
 from src.shock_graph.visualizer import ShockVisualizer
 from src.shock_graph.coarsener import GraphCoarsener
-from src.shock_graph.feature_extractor import FeatureExtractor
+from src.shock_graph.feature_extractor import ShockFeatureExtractor
 
 
 def print_graph_report(graph: ShockGraph, filename: str, stage: str = "FINAL") -> None:
@@ -100,7 +100,7 @@ def main() -> None:
         # get their lengths, curvatures, and areas calculated!
         print("Re-computing geometric features for merged edges...")
         # Note: Ensure this matches the exact method name in your feature_extractor.py
-        FeatureExtractor.process(graph) 
+        ShockFeatureExtractor.process_graph(graph) 
 
     # 4. Print Detailed Report
     print_graph_report(graph, args.input_file, stage="COARSENED" if args.coarse else "ORIGINAL")

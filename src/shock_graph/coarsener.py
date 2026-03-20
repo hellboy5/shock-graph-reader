@@ -66,14 +66,13 @@ class GraphCoarsener:
                         edge_id_counter += 1
                         break
 
-                    # Otherwise, swallow the degree-2 node's sample point
-                    if next_node.sample:
-                        merged_samples.append(next_node.sample)
-                    
                     # Move to the next edge in the pass-through chain
                     # (Guaranteed exactly 1 outgoing edge by Rule 3)
                     current_edge = next_node.outgoing_edges[0]
-                    merged_samples.extend(current_edge.samples)
+                    
+                    # Extend the curve, but skip the first sample of the new edge 
+                    # because it is identical to the last sample of the previous edge!
+                    merged_samples.extend(current_edge.samples[1:])
 
                     # Cycle protection (prevents infinite loops on closed circles)
                     if current_edge in visited_edges:
