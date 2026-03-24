@@ -234,6 +234,51 @@ class TestResampling(unittest.TestCase):
         self.assertEqual(s_pts[-1], (10.0, 0.0))
         self.assertEqual(len(s_pts), len(s_pb))
 
+class TestEdgeConditions(unittest.TestCase):
+    """Tests for messy, degenerate, or invalid input data."""
 
+    def test_empty_and_single_point_curve(self):
+        """Curves with < 2 points should safely return zeros without crashing."""
+        l1, c1, a1 = geometry.compute_curve_stats([])
+        self.assertEqual((l1, c1, a1), (0.0, 0.0, 0.0))
+
+        l2, c2, a2 = geometry.compute_curve_stats([(5.0, 5.0)])
+        self.assertEqual((l2, c2, a2), (0.0, 0.0, 0.0))
+
+    def test_duplicate_points(self):
+        """Curves with overlapping consecutive points should not divide by zero or spike."""
+        # A straight line, but the point (5.0, 0.0) is duplicated 3 times
+        curve = [
+            (0.0, 0.0), 
+            (5.0, 0.0), 
+            (5.0, 0.0), 
+            (5.0, 0.0), 
+            (10.0, 0.0)
+        ]
+        
+        length, total_curv, total_angle = geometry.compute_curve_stats(curve)
+
+        self.assertAlmostEqual(length, 10.0)
+        self.assertAlmostEqual(total_curv, 0.0)
+        self.assertAlmostEqual(total_angle, 0.0)
+
+    def test_subsample_mismatched_lists(self):
+        """Subsample should safely bail out if input lists are out of sync."""
+        pts = [(0.0, 0.0), (1.0, 1.0), (2.0, 2.0)]
+        times = [1.0, 1.0] # Mismatched length!
+        thetas = [0.0, 0.0, 0.0]
+        phis = [0.0, 0.0, 0.0]
+        bp = [(0,1), (1,2), (2,3)]
+        bm = [(0,-1), (1,-2), (2,-3)]
+
+        s_pts, s_times, _, _, _, _ = geometry.subsample(
+            pts, times, thetas, phis, bp, bm
+        )
+        
+        # Should return the original lists un-altered
+        self.assertEqual(len(s_pts), 3)
+        self.assertEqual(len(s_times), 2)
+
+        
 if __name__ == "__main__":
     unittest.main()

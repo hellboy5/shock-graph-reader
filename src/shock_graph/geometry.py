@@ -6,7 +6,7 @@ from typing import List, Tuple
 import numpy as np
 
 
-ZERO_TOLERANCE = 1e-1
+ZERO_TOLERANCE = 1e-7
 
 
 def angle_diff(angle1: float, angle2: float) -> float:
@@ -314,26 +314,26 @@ def compute_curvatures(
 
 
 def compute_angles(curve: List[Tuple[float, float]]) -> float:
-    """Computes the total absolute angle change along the curve.
-
-    Args:
-        curve: A list of (x, y) points representing the curve.
-
-    Returns:
-        The total sum of absolute angular changes.
-    """
+    """Computes the total absolute angle change along the curve."""
     angle = [0.0]
     total_angle_change = 0.0
     px, py = curve[0]
+    
     for cx, cy in curve[1:]:
-        theta = math.atan2(cy - py, cx - px)
-        angle.append(theta)
+        # NEW: Protect against duplicate points (dl == 0)
+        if math.hypot(cx - px, cy - py) > ZERO_TOLERANCE:
+            theta = math.atan2(cy - py, cx - px)
+            angle.append(theta)
+        else:
+            # If points are duplicate, the angle hasn't changed
+            angle.append(angle[-1] if len(angle) > 1 else 0.0)
         px, py = cx, cy
 
-    if len(curve) > 2:
+    if len(angle) > 2:
         angle[0] = angle[1]
         for i in range(1, len(angle)):
             total_angle_change += abs(angle_diff(angle[i], angle[i - 1]))
+            
     return total_angle_change
 
 
