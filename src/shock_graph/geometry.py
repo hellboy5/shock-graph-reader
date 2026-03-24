@@ -260,9 +260,15 @@ def compute_derivatives(
             dx.append((cx - px) / dl)
             dy.append((cy - py) / dl)
         else:
-            dx.append(0.0)
-            dy.append(0.0)
+            dx.append(dx[-1] if len(dx) > 1 else 0.0)
+            dy.append(dy[-1] if len(dy) > 1 else 0.0)
         px, py = cx, cy
+        
+    # NEW: Backfill the first derivative so the curve doesn't start from a dead stop
+    if len(curve) > 1:
+        dx[0] = dx[1]
+        dy[0] = dy[1]
+        
     return dx, dy
 
 
@@ -301,7 +307,9 @@ def compute_curvatures(
             kappa = (d2y * cdx - d2x * cdy) / denominator
 
         curvature.append(kappa)
-        total_curvature += kappa
+        # NEW: Multiply by arc-length segment (dl) to compute the true integral
+        total_curvature += kappa * dl
+        
     return curvature, total_curvature
 
 
