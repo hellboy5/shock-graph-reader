@@ -47,17 +47,30 @@ class ShockVisualizer:
             # Plot the continuous curve in green
             ax.plot(x_vals, y_vals, color='green', alpha=0.6, linewidth=2)
 
-            # Add directional arrow near the midpoint of the curve in green
+            # Add directional arrow near the midpoint of the curve
             if len(edge.samples) >= 2:
                 mid_idx = len(edge.samples) // 2
                 
-                # We point the arrow from the sample just before the midpoint 
-                # to the midpoint itself to indicate forward flow.
+                # Pull the tail point back a few samples to ensure a visible vector, 
+                # but ensure we don't drop below index 0
+                tail_idx = max(0, mid_idx - 3)
+                
+                # Fallback if the edge only has exactly 2 samples
+                if tail_idx == mid_idx:
+                    tail_idx = mid_idx - 1
+                
+                # Point the arrow from the tail sample to the midpoint to indicate forward flow.
                 ax.annotate(
                     '',
                     xy=(x_vals[mid_idx], y_vals[mid_idx]),
-                    xytext=(x_vals[mid_idx - 1], y_vals[mid_idx - 1]),
-                    arrowprops=dict(arrowstyle="->", color='green', lw=2.0),
+                    xytext=(x_vals[tail_idx], y_vals[tail_idx]),
+                    arrowprops=dict(
+                        arrowstyle="-|>",       # Solid filled triangle
+                        color='darkgreen',      # High contrast against the green line
+                        lw=2.0,
+                        mutation_scale=25,      # Forces the arrowhead to render larger
+                    ),
+                    zorder=5,                   # Layer the arrow explicitly on top of the lines
                 )
 
         # 2. Plot nodes and labels
@@ -68,7 +81,7 @@ class ShockVisualizer:
             x, y = node.sample.x, node.sample.y
 
             # Draw the node point
-            ax.plot(x, y, marker='o', color='black', markersize=6)
+            ax.plot(x, y, marker='o', color='black', markersize=6, zorder=6)
 
             # Label the node with its ID
             ax.text(
@@ -80,6 +93,7 @@ class ShockVisualizer:
                 weight='bold',
                 va='bottom',
                 ha='left',
+                zorder=7
             )
 
         # 3. Format the plot
