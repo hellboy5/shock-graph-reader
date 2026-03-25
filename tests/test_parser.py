@@ -27,7 +27,7 @@ TEST_CONFIGS = [
 class TestShockParser(unittest.TestCase):
     def setUp(self):
         # Dynamically locate the data/ directory and grab all .esf files
-        self.data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
+        self.data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data'))
         self.esf_files = glob.glob(os.path.join(self.data_dir, '*.esf'))
 
     def test_parse_all_esf_files(self):
