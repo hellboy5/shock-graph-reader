@@ -87,7 +87,7 @@ def main() -> None:
 
     # 2. Parse the Graph
     print(f"Parsing '{args.input_file}'...")
-    graph = ShockParser.parse(args.input_file)
+    graph = ShockParser(args.input_file).parse()
     
     # 3. Optional Coarsening
     if args.coarse:
