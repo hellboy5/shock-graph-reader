@@ -1,8 +1,10 @@
 """Visualizes shock graphs using Matplotlib."""
 
+import os
 from typing import Optional
 
 import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 
 from .structures import ShockGraph
 
@@ -15,6 +17,7 @@ class ShockVisualizer:
         graph: ShockGraph,
         figsize: tuple = (10, 10),
         save_path: Optional[str] = None,
+        image_path: Optional[str] = None,
     ) -> None:
         """Plots the shock graph with nodes, edges, and directional arrows.
 
@@ -22,8 +25,16 @@ class ShockVisualizer:
             graph: The ShockGraph instance to visualize.
             figsize: The dimensions of the matplotlib figure.
             save_path: Optional file path to save the image instead of showing.
+            image_path: Optional file path to an underlying image to overlay the graph onto.
         """
         fig, ax = plt.subplots(figsize=figsize)
+
+        # 0. Optionally render the background image
+        if image_path and os.path.exists(image_path):
+            img = mpimg.imread(image_path)
+            # Display image (Note: Matplotlib imshow defaults to y=0 at the top, 
+            # which typically matches computer vision image coordinates)
+            ax.imshow(img)
 
         # 1. Plot edges and directional arrows
         for edge in graph.edges:
@@ -82,7 +93,8 @@ class ShockVisualizer:
         if save_path:
             plt.savefig(save_path, bbox_inches='tight')
             print(f"Graph successfully saved to {save_path}")
+            # Only close the figure if we are saving headless!
+            plt.close(fig)
         else:
+            # Leave the figure open for the interactive widget
             plt.show()
-
-        plt.close(fig)

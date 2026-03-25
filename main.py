@@ -73,6 +73,11 @@ def main() -> None:
         help="Render and display the shock graph using Matplotlib."
     )
     parser.add_argument(
+        "--overlay", 
+        action="store_true", 
+        help="Visualize the shock graph overlaid on its corresponding underlying image."
+    )
+    parser.add_argument(
         "-c", "--coarse", 
         action="store_true", 
         help="Coarsen the graph by merging degree-2 pass-through nodes."
@@ -96,26 +101,40 @@ def main() -> None:
         graph = GraphCoarsener.coarsen(graph)
         print(f"Graph reduced from {original_node_count} to {len(graph.nodes)} nodes.")
         
-        # We must re-run the feature extractor so the new merged edges 
-        # get their lengths, curvatures, and areas calculated!
         print("Re-computing geometric features for merged edges...")
-        # Note: Ensure this matches the exact method name in your feature_extractor.py
         ShockFeatureExtractor.process_graph(graph) 
 
     # 4. Print Detailed Report
     print_graph_report(graph, args.input_file, stage="COARSENED" if args.coarse else "ORIGINAL")
 
     # 5. Optional Visualization
-    if args.visualize:
+    if args.visualize or args.overlay:
         print("Opening visualizer...")
-        ShockVisualizer.draw(graph)
+        image_path = None
+        
+        # If overlay is requested, try to find a matching image file
+        if args.overlay:
+            base_path = os.path.splitext(args.input_file)[0]
+            valid_extensions = ['.png', '.jpg', '.jpeg', '.bmp']
+            
+            for ext in valid_extensions:
+                if os.path.exists(base_path + ext):
+                    image_path = base_path + ext
+                    print(f"Found corresponding image: {image_path}")
+                    break
+            
+            # Print a graceful warning if missing, but continue rendering
+            if not image_path:
+                print(f"\nWarning: '--overlay' was requested, but no image matching '{base_path}.[png|jpg]' was found.")
+                print("Rendering the shock graph on a blank canvas instead.\n")
+
+        ShockVisualizer.draw(graph, image_path=image_path)
 
     # 6. Determine Output Path
     out_path = args.output
     if not out_path:
         base_name, _ = os.path.splitext(args.input_file)
         extension_map = {"pyg": ".pt", "dgl": ".dgl", "nx": ".graphml"}
-        # Append '_coarse' to the filename so you don't overwrite the original
         suffix = "_coarse" if args.coarse else ""
         out_path = f"{base_name}{suffix}{extension_map[args.format]}"
 
