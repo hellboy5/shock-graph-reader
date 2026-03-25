@@ -31,7 +31,9 @@ class GraphCoarsener:
             old_node = graph.nodes[nid]
             new_node = Node(node_id=old_node.id, node_type=old_node.type)
             new_node.sample = old_node.sample
-            new_node._cw_neighbors = list(old_node._cw_neighbors)
+            
+            # [FIXED]: Start with a clean slate instead of copying old dangling IDs
+            new_node._cw_neighbors = [] 
             new_nodes[nid] = new_node
 
         new_edges: List[Edge] = []
@@ -62,6 +64,10 @@ class GraphCoarsener:
                             target=new_nodes[next_node.id], # Pointing to the NEW node
                             samples=merged_samples
                         )
+                        
+                        # [FIXED]: Register the new, valid neighbor relationship
+                        new_nodes[start_id].add_neighbor(next_node.id)
+                        
                         new_edges.append(merged_edge)
                         edge_id_counter += 1
                         break
