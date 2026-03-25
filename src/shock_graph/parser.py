@@ -108,8 +108,8 @@ class ShockParser:
             x, y, t = map(float, x_y_t_match.group(1).split(','))
             
             speed = float(re.search(r'speed\s+([e\d\.\+\-]+)', b).group(1))
-            
-            theta_deg = float(re.search(r'theta\s+([\d\.]+)', b).group(1))
+
+            theta_deg = float(re.search(r'theta\s+([e\d\.\+\-]+)', b).group(1))
             theta = theta_deg * math.pi / 180.0
             
             if 0 < abs(speed) < 99990:
