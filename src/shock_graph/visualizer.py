@@ -50,27 +50,47 @@ class ShockVisualizer:
             # Add directional arrow near the midpoint of the curve
             if len(edge.samples) >= 2:
                 mid_idx = len(edge.samples) // 2
+                mid_x, mid_y = x_vals[mid_idx], y_vals[mid_idx]
                 
-                # Pull the tail point back a few samples to ensure a visible vector, 
-                # but ensure we don't drop below index 0
-                tail_idx = max(0, mid_idx - 3)
+                # Search backwards to find a point physically distant enough to draw a vector.
+                # This explicitly ignores clumps of identical "degenerate" points.
+                tail_idx = mid_idx - 1
+                while tail_idx >= 0:
+                    # Calculate Euclidean distance
+                    dist = ((mid_x - x_vals[tail_idx])**2 + (mid_y - y_vals[tail_idx])**2) ** 0.5
+                    if dist > 2.0:  # Minimum physical distance needed for a clean arrow
+                        break
+                    tail_idx -= 1
                 
-                # Fallback if the edge only has exactly 2 samples
-                if tail_idx == mid_idx:
-                    tail_idx = mid_idx - 1
-                
-                # Point the arrow from the tail sample to the midpoint to indicate forward flow.
+                # If we couldn't find a valid tail looking backwards, try looking forwards
+                if tail_idx < 0:
+                    head_idx = mid_idx + 1
+                    while head_idx < len(edge.samples):
+                        dist = ((x_vals[head_idx] - mid_x)**2 + (y_vals[head_idx] - mid_y)**2) ** 0.5
+                        if dist > 2.0:
+                            break
+                        head_idx += 1
+                    
+                    if head_idx < len(edge.samples):
+                        tail_x, tail_y = mid_x, mid_y
+                        head_x, head_y = x_vals[head_idx], y_vals[head_idx]
+                    else:
+                        continue  # Edge is far too small to draw an arrow
+                else:
+                    tail_x, tail_y = x_vals[tail_idx], y_vals[tail_idx]
+                    head_x, head_y = mid_x, mid_y
+
                 ax.annotate(
                     '',
-                    xy=(x_vals[mid_idx], y_vals[mid_idx]),
-                    xytext=(x_vals[tail_idx], y_vals[tail_idx]),
+                    xy=(head_x, head_y),
+                    xytext=(tail_x, tail_y),
                     arrowprops=dict(
-                        arrowstyle="-|>",       # Solid filled triangle
-                        color='darkgreen',      # High contrast against the green line
+                        arrowstyle="-|>",       
+                        color='darkgreen',      
                         lw=2.0,
-                        mutation_scale=25,      # Forces the arrowhead to render larger
+                        mutation_scale=25,      
                     ),
-                    zorder=5,                   # Layer the arrow explicitly on top of the lines
+                    zorder=5,                   
                 )
 
         # 2. Plot nodes and labels
@@ -83,11 +103,11 @@ class ShockVisualizer:
             # Draw the node point
             ax.plot(x, y, marker='o', color='black', markersize=6, zorder=6)
 
-            # Label the node with its ID
+            # Label the node with its Type and ID
             ax.text(
                 x,
                 y,
-                f' {node.id}',
+                f' {node.type}:{node.id}',
                 fontsize=10,
                 color='black',
                 weight='bold',
