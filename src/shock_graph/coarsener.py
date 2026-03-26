@@ -31,8 +31,7 @@ class GraphCoarsener:
             old_node = graph.nodes[nid]
             new_node = Node(node_id=old_node.id, node_type=old_node.type)
             new_node.sample = old_node.sample
-            
-            # [FIXED]: Start with a clean slate instead of copying old dangling IDs
+            # Start with a clean slate to prevent dangling pointers
             new_node._cw_neighbors = [] 
             new_nodes[nid] = new_node
 
@@ -40,7 +39,7 @@ class GraphCoarsener:
         visited_edges: Set[Edge] = set()
         edge_id_counter = 0
 
-        # 3. Trace paths from all kept nodes
+        # 3. Trace paths from all kept nodes to build new edges
         for start_id in kept_nodes_ids:
             start_node = graph.nodes[start_id]
             
@@ -64,10 +63,6 @@ class GraphCoarsener:
                             target=new_nodes[next_node.id], # Pointing to the NEW node
                             samples=merged_samples
                         )
-                        
-                        # [FIXED]: Register the new, valid neighbor relationship
-                        new_nodes[start_id].add_neighbor(next_node.id)
-                        
                         new_edges.append(merged_edge)
                         edge_id_counter += 1
                         break
@@ -84,7 +79,38 @@ class GraphCoarsener:
                     if current_edge in visited_edges:
                         break
 
-        # 4. Return the newly compressed graph
+        # 4. Remap Clockwise Neighbors safely (Preserves exact planar ordering)
+        for nid, new_node in new_nodes.items():
+            old_node = graph.nodes[nid]
+            for old_neighbor_id in old_node.get_cw_neighbors():
+                current_id = old_neighbor_id
+                prev_id = nid
+                
+                visited_for_cycle = set()
+                
+                # Fast-forward through degree-2 nodes until we hit a kept node
+                while current_id not in kept_nodes_ids:
+                    if current_id in visited_for_cycle:
+                        break # Failsafe: We hit an infinite loop in corrupted data
+                    visited_for_cycle.add(current_id)
+                    
+                    deg2_node = graph.nodes[current_id]
+                    neighbors = deg2_node.get_cw_neighbors()
+                    
+                    # A pure degree-2 node should have exactly 2 neighbors.
+                    if len(neighbors) == 2:
+                        next_id = neighbors[0] if neighbors[0] != prev_id else neighbors[1]
+                    else:
+                        break # Fallback for corrupted planar data
+                        
+                    prev_id = current_id
+                    current_id = next_id
+                    
+                # We reached the end of the chain; register the valid kept node
+                if current_id in kept_nodes_ids:
+                    new_node.add_neighbor(current_id)
+
+        # 5. Return the newly compressed graph
         coarsened_graph = ShockGraph()
         coarsened_graph.nodes = new_nodes
         coarsened_graph.edges = new_edges
