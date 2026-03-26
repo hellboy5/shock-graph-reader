@@ -1,9 +1,11 @@
 """Feature extraction logic for shock graph elements."""
 
+from __future__ import annotations
+
 import numpy as np
 
 from . import geometry
-from .structures import Edge, EdgeShapeFeatures
+from .structures import Edge, EdgeShapeFeatures, ShockGraph
 
 
 class ShockFeatureExtractor:
@@ -82,7 +84,7 @@ class ShockFeatureExtractor:
         )
 
     @staticmethod
-    def process_graph(graph: 'ShockGraph') -> None:
+    def process_graph(graph: ShockGraph) -> None:
         """Computes and assigns features for all edges in the graph."""
         for edge in graph.edges:
             edge.features = ShockFeatureExtractor.extract_edge_features(edge)

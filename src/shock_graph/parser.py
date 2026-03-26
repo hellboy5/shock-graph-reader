@@ -113,7 +113,9 @@ class ShockParser:
             theta = theta_deg * math.pi / 180.0
             
             if 0 < abs(speed) < 99990:
-                phi = math.acos(-1.0 / speed)
+                # Clamp between -1.0 and 1.0
+                val = max(-1.0, min(1.0, -1.0 / speed))
+                phi = math.acos(val)
             else:
                 phi = math.pi / 2.0
                 

@@ -1,5 +1,7 @@
 """Data structures representing a shock graph and its components."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
@@ -78,8 +80,8 @@ class Node:
         self._cw_neighbors: List[int] = []
 
         # Directed edge tracking
-        self.incoming_edges: List['Edge'] = []
-        self.outgoing_edges: List['Edge'] = []
+        self.incoming_edges: List[Edge] = []
+        self.outgoing_edges: List[Edge] = []
 
     def add_neighbor(self, neighbor_id: int) -> None:
         """Adds an adjacent node ID in clockwise order.
