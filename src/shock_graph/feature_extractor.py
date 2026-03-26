@@ -61,13 +61,6 @@ class ShockFeatureExtractor:
         p_len, p_curv, p_ang = geometry.compute_curve_stats(s_p_bdry)
         m_len, m_curv, m_ang = geometry.compute_curve_stats(s_m_bdry)
 
-        # Ensure consistent boundary orientation to prevent arbitrary swapping
-        if len(s_p_bdry) > 0 and len(s_m_bdry) > 0:
-            if s_p_bdry[0][0] > s_m_bdry[0][0]:
-                p_curv, m_curv = m_curv, p_curv
-                p_len, m_len = m_len, p_len
-                p_ang, m_ang = m_ang, p_ang
-
         # 6. Compute Polygon Area
         poly_points = (
             [s_pts[0]] + s_p_bdry + [s_pts[-1]] + s_m_bdry[::-1] + [s_pts[0]]

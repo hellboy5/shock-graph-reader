@@ -39,21 +39,24 @@ class GraphConverter:
                 - edge_indices: List of (source_idx, target_idx) tuples.
                 - edge_features: List of feature arrays per edge.
         """
-        # Map original node IDs to contiguous zero-indexed integers
+        # Maps original node ID to a contiguous 0-indexed integer for PyTorch
         node_to_idx: Dict[int, int] = {}
-        for idx, original_id in enumerate(graph.nodes.keys()):
+        # We explicitly sort the keys to guarantee reproducible tensor layouts
+        # across different environments and executions.
+        for idx, original_id in enumerate(sorted(graph.nodes.keys())):
             node_to_idx[original_id] = idx
 
-        # 1. Extract Node Features: (x, y, t, type)
-        node_features: List[List[float]] = []
-        for node in graph.nodes.values():
+        # [FIXED]: Iterate through the nodes in the exact same sorted order
+        # so the feature rows match the node_to_idx mapping.
+        for original_id in sorted(graph.nodes.keys()):
+            node = graph.nodes[original_id]
             x = node.sample.x if node.sample else 0.0
             y = node.sample.y if node.sample else 0.0
             t = node.sample.t if node.sample else 0.0
             node_type = cls.NODE_TYPE_ENCODING.get(node.type, 5.0)
 
             node_features.append([x, y, t, node_type])
-
+            
         # 2. Extract Edge Indices and Edge Features
         edge_indices: List[Tuple[int, int]] = []
         edge_features: List[List[float]] = []
