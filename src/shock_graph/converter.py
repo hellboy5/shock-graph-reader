@@ -46,6 +46,8 @@ class GraphConverter:
         for idx, original_id in enumerate(sorted(graph.nodes.keys())):
             node_to_idx[original_id] = idx
 
+        node_features: List[List[float]] = []
+        
         # [FIXED]: Iterate through the nodes in the exact same sorted order
         # so the feature rows match the node_to_idx mapping.
         for original_id in sorted(graph.nodes.keys()):
