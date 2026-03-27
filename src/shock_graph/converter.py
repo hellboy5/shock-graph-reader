@@ -81,10 +81,14 @@ class GraphConverter:
                     edge.features.m_curve,
                     edge.features.m_angle,
                     edge.features.poly_area,
+                    edge.features.avg_thickness,
+                    edge.features.max_thickness,
+                    edge.features.taper_rate,
+                    edge.features.total_flare,
                 ]
             else:
                 # Fallback if feature extraction was skipped
-                feats = [0.0] * 10
+                feats = [0.0] * 14
 
             edge_features.append(feats)
 

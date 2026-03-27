@@ -54,7 +54,10 @@ class EdgeShapeFeatures:
     m_curve: float = 0.0
     m_angle: float = 0.0
     poly_area: float = 0.0
-
+    avg_thickness: float = 0.0
+    max_thickness: float = 0.0
+    taper_rate: float = 0.0
+    total_flare: float = 0.0
 
 class Node:
     """A point in the Shock DAG with GNN-ready connectivity metrics.

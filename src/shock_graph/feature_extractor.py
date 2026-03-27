@@ -70,6 +70,17 @@ class ShockFeatureExtractor:
         x_poly, y_poly = zip(*poly_points)
         area = geometry.poly_area(np.array(x_poly), np.array(y_poly))
 
+        # 7. Compute Volumetric & Flaring Features
+        # Using the interpolated radius (i_times) to ensure scale-invariance
+        avg_thick = float(np.mean(i_times)) if len(i_times) > 0 else 0.0
+        max_thick = float(np.max(i_times)) if len(i_times) > 0 else 0.0
+        
+        # Taper rate (dt/ds): overall change in radius normalized by arc length
+        taper = (i_times[-1] - i_times[0]) / s_len if s_len > 0.0 else 0.0
+        
+        # Total Flare (Integral of d_phi): Sum of absolute changes in the object angle
+        total_flare = float(np.sum(np.abs(np.diff(i_phis)))) if len(i_phis) > 1 else 0.0
+
         return EdgeShapeFeatures(
             s_length=s_len,
             s_curve=s_curv,
@@ -81,6 +92,10 @@ class ShockFeatureExtractor:
             m_curve=m_curv,
             m_angle=m_ang,
             poly_area=area,
+            avg_thickness=avg_thick,
+            max_thickness=max_thick,
+            taper_rate=taper,
+            total_flare=total_flare
         )
 
     @staticmethod
