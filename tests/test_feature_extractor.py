@@ -1,5 +1,6 @@
 """Unit tests for the geometric feature extraction."""
 
+import math
 import os
 import sys
 import unittest
@@ -78,6 +79,78 @@ class TestFeatureExtractorRectangle(unittest.TestCase):
             perim_error, 0.05, 
             f"Perimeter Mismatch! True ArcLength: {true_perimeter:.2f}, Graph Boundaries: {total_boundary_length:.2f}"
         )
+
+
+class TestFeatureExtractorSynthetic(unittest.TestCase):
+    """Test suite verifying geometric invariants on perfect synthetic math shapes."""
+
+    def setUp(self):
+        self.data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data'))
+
+    def test_synthetic_arc_dynamics(self):
+        """Tests perfect curvature, boundary reconstruction, and constant thickness."""
+        arc_esf = os.path.join(self.data_dir, 'synth_arc.esf')
+        if not os.path.exists(arc_esf):
+            self.skipTest("synth_arc.esf not found. Run scripts/generate_synthetic_data.py first.")
+
+        graph = ShockParser(arc_esf).parse()
+        feats = graph.edges[0].features
+        
+        # 1. ARC LENGTHS (Semicircle = pi * R)
+        self.assertAlmostEqual(feats.s_length, 100 * math.pi, delta=5.0) # Spine
+        self.assertAlmostEqual(feats.p_length, 120 * math.pi, delta=5.0) # Outer Boundary (100 + 20)
+        self.assertAlmostEqual(feats.m_length,  80 * math.pi, delta=5.0) # Inner Boundary (100 - 20)
+
+        # 2. BENDING DYNAMICS (Half-circle = exactly pi radians of bending)
+        self.assertAlmostEqual(feats.s_angle, math.pi, delta=0.05)
+        self.assertAlmostEqual(feats.s_curve, math.pi, delta=0.05)
+        
+        # 3. VOLUMETRICS
+        true_area = 4000 * math.pi # pi * (R_outer^2 - R_inner^2) / 2
+        self.assertAlmostEqual(feats.poly_area, true_area, delta=true_area * 0.05)
+        
+        # 4. THICKNESS DYNAMICS (Should be perfectly constant)
+        self.assertAlmostEqual(feats.avg_thickness, 20.0, delta=0.1)
+        self.assertAlmostEqual(feats.max_thickness, 20.0, delta=0.1)
+        self.assertAlmostEqual(feats.taper_rate, 0.0, delta=0.01) # Tube does not taper
+
+    def test_synthetic_wedge(self):
+        """Tests pure tapering and boundary flare with zero bending."""
+        wedge_esf = os.path.join(self.data_dir, 'synth_wedge.esf')
+        if not os.path.exists(wedge_esf):
+            self.skipTest("synth_wedge.esf not found. Run scripts/generate_synthetic_data.py first.")
+
+        graph = ShockParser(wedge_esf).parse()
+        feats = graph.edges[0].features
+        
+        # 1. Bending should be identically zero
+        self.assertAlmostEqual(feats.s_curve, 0.0, delta=0.01)
+        self.assertAlmostEqual(feats.s_angle, 0.0, delta=0.01)
+        
+        # 2. Tapering should be perfectly detected (dt/ds)
+        # Length is 100, radius goes from 1 to 21. Taper = (21-1)/100 = 0.2
+        self.assertAlmostEqual(feats.taper_rate, 0.2, delta=0.01)
+        self.assertAlmostEqual(feats.avg_thickness, 11.0, delta=0.1)
+        
+        # 3. Flare should be zero (boundaries are straight lines converging)
+        self.assertAlmostEqual(feats.total_flare, 0.0, delta=0.01)
+
+    def test_synthetic_horn(self):
+        """Tests combined curving spine and shrinking radius."""
+        horn_esf = os.path.join(self.data_dir, 'synth_horn.esf')
+        if not os.path.exists(horn_esf):
+            self.skipTest("synth_horn.esf not found. Run scripts/generate_synthetic_data.py first.")
+
+        graph = ShockParser(horn_esf).parse()
+        feats = graph.edges[0].features
+        
+        # 1. Bending: Quarter circle is exactly pi/2 radians (90 degrees)
+        self.assertAlmostEqual(feats.s_curve, math.pi / 2.0, delta=0.05)
+        self.assertAlmostEqual(feats.s_angle, math.pi / 2.0, delta=0.05)
+        
+        # 2. Tapering: Radius drops 15 pixels over a distance of 50*pi
+        expected_taper = -15.0 / (50.0 * math.pi)
+        self.assertAlmostEqual(feats.taper_rate, expected_taper, delta=0.01)
 
 
 if __name__ == "__main__":
