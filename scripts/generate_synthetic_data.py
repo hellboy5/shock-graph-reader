@@ -6,7 +6,10 @@ def write_esf(filepath, num_samples, point_generator):
         f.write("Extrinsic Shock File v1.0\n\n")
         f.write("Begin [GENERAL INFO]\nNumber of Nodes: 2\nNumber of Edges: 1\nEnd [GENERAL INFO]\n\n")
         f.write("Begin [NODE DESCRIPTION]\n")
-        f.write(f"1 TERMINAL I [2] [1]\n2 TERMINAL I [1] [{num_samples}]\n")
+        
+        # FIXED: Use 'T' instead of 'TERMINAL'
+        f.write(f"1 T I [2] [1]\n2 T I [1] [{num_samples}]\n")
+        
         f.write("End [NODE DESCRIPTION]\n\n")
         
         f.write("Begin [EDGE DESCRIPTION]\n")

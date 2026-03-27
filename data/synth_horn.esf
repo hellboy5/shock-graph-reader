@@ -6,8 +6,8 @@ Number of Edges: 1
 End [GENERAL INFO]
 
 Begin [NODE DESCRIPTION]
-1 TERMINAL I [2] [1]
-2 TERMINAL I [1] [50]
+1 T I [2] [1]
+2 T I [1] [50]
 End [NODE DESCRIPTION]
 
 Begin [EDGE DESCRIPTION]
