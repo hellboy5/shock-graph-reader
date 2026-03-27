@@ -1,0 +1,516 @@
+Extrinsic Shock File v1.0
+
+Begin [GENERAL INFO]
+Number of Nodes: 2
+Number of Edges: 1
+End [GENERAL INFO]
+
+Begin [NODE DESCRIPTION]
+1 TERMINAL I [2] [1]
+2 TERMINAL I [1] [50]
+End [NODE DESCRIPTION]
+
+Begin [EDGE DESCRIPTION]
+10 I [1 2] [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50]
+End [EDGE DESCRIPTION]
+
+Begin SAMPLE
+sample_id 1
+(x, y, t) (100.0000, 0.0000, 20.0000)
+edge_id 10
+label regular
+type N
+theta 90.0000
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 2
+(x, y, t) (99.9486, 3.2052, 19.6939)
+edge_id 10
+label regular
+type N
+theta 91.8367
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 3
+(x, y, t) (99.7945, 6.4070, 19.3878)
+edge_id 10
+label regular
+type N
+theta 93.6735
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 4
+(x, y, t) (99.5379, 9.6023, 19.0816)
+edge_id 10
+label regular
+type N
+theta 95.5102
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 5
+(x, y, t) (99.1790, 12.7877, 18.7755)
+edge_id 10
+label regular
+type N
+theta 97.3469
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 6
+(x, y, t) (98.7182, 15.9600, 18.4694)
+edge_id 10
+label regular
+type N
+theta 99.1837
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 7
+(x, y, t) (98.1559, 19.1159, 18.1633)
+edge_id 10
+label regular
+type N
+theta 101.0204
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 8
+(x, y, t) (97.4928, 22.2521, 17.8571)
+edge_id 10
+label regular
+type N
+theta 102.8571
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 9
+(x, y, t) (96.7295, 25.3655, 17.5510)
+edge_id 10
+label regular
+type N
+theta 104.6939
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 10
+(x, y, t) (95.8668, 28.4528, 17.2449)
+edge_id 10
+label regular
+type N
+theta 106.5306
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 11
+(x, y, t) (94.9056, 31.5108, 16.9388)
+edge_id 10
+label regular
+type N
+theta 108.3673
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 12
+(x, y, t) (93.8468, 34.5365, 16.6327)
+edge_id 10
+label regular
+type N
+theta 110.2041
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 13
+(x, y, t) (92.6917, 37.5267, 16.3265)
+edge_id 10
+label regular
+type N
+theta 112.0408
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 14
+(x, y, t) (91.4413, 40.4783, 16.0204)
+edge_id 10
+label regular
+type N
+theta 113.8776
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 15
+(x, y, t) (90.0969, 43.3884, 15.7143)
+edge_id 10
+label regular
+type N
+theta 115.7143
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 16
+(x, y, t) (88.6599, 46.2538, 15.4082)
+edge_id 10
+label regular
+type N
+theta 117.5510
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 17
+(x, y, t) (87.1319, 49.0718, 15.1020)
+edge_id 10
+label regular
+type N
+theta 119.3878
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 18
+(x, y, t) (85.5143, 51.8393, 14.7959)
+edge_id 10
+label regular
+type N
+theta 121.2245
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 19
+(x, y, t) (83.8088, 54.5535, 14.4898)
+edge_id 10
+label regular
+type N
+theta 123.0612
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 20
+(x, y, t) (82.0172, 57.2117, 14.1837)
+edge_id 10
+label regular
+type N
+theta 124.8980
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 21
+(x, y, t) (80.1414, 59.8111, 13.8776)
+edge_id 10
+label regular
+type N
+theta 126.7347
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 22
+(x, y, t) (78.1831, 62.3490, 13.5714)
+edge_id 10
+label regular
+type N
+theta 128.5714
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 23
+(x, y, t) (76.1446, 64.8228, 13.2653)
+edge_id 10
+label regular
+type N
+theta 130.4082
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 24
+(x, y, t) (74.0278, 67.2301, 12.9592)
+edge_id 10
+label regular
+type N
+theta 132.2449
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 25
+(x, y, t) (71.8349, 69.5683, 12.6531)
+edge_id 10
+label regular
+type N
+theta 134.0816
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 26
+(x, y, t) (69.5683, 71.8349, 12.3469)
+edge_id 10
+label regular
+type N
+theta 135.9184
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 27
+(x, y, t) (67.2301, 74.0278, 12.0408)
+edge_id 10
+label regular
+type N
+theta 137.7551
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 28
+(x, y, t) (64.8228, 76.1446, 11.7347)
+edge_id 10
+label regular
+type N
+theta 139.5918
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 29
+(x, y, t) (62.3490, 78.1831, 11.4286)
+edge_id 10
+label regular
+type N
+theta 141.4286
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 30
+(x, y, t) (59.8111, 80.1414, 11.1224)
+edge_id 10
+label regular
+type N
+theta 143.2653
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 31
+(x, y, t) (57.2117, 82.0172, 10.8163)
+edge_id 10
+label regular
+type N
+theta 145.1020
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 32
+(x, y, t) (54.5535, 83.8088, 10.5102)
+edge_id 10
+label regular
+type N
+theta 146.9388
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 33
+(x, y, t) (51.8393, 85.5143, 10.2041)
+edge_id 10
+label regular
+type N
+theta 148.7755
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 34
+(x, y, t) (49.0718, 87.1319, 9.8980)
+edge_id 10
+label regular
+type N
+theta 150.6122
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 35
+(x, y, t) (46.2538, 88.6599, 9.5918)
+edge_id 10
+label regular
+type N
+theta 152.4490
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 36
+(x, y, t) (43.3884, 90.0969, 9.2857)
+edge_id 10
+label regular
+type N
+theta 154.2857
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 37
+(x, y, t) (40.4783, 91.4413, 8.9796)
+edge_id 10
+label regular
+type N
+theta 156.1224
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 38
+(x, y, t) (37.5267, 92.6917, 8.6735)
+edge_id 10
+label regular
+type N
+theta 157.9592
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 39
+(x, y, t) (34.5365, 93.8468, 8.3673)
+edge_id 10
+label regular
+type N
+theta 159.7959
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 40
+(x, y, t) (31.5108, 94.9056, 8.0612)
+edge_id 10
+label regular
+type N
+theta 161.6327
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 41
+(x, y, t) (28.4528, 95.8668, 7.7551)
+edge_id 10
+label regular
+type N
+theta 163.4694
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 42
+(x, y, t) (25.3655, 96.7295, 7.4490)
+edge_id 10
+label regular
+type N
+theta 165.3061
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 43
+(x, y, t) (22.2521, 97.4928, 7.1429)
+edge_id 10
+label regular
+type N
+theta 167.1429
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 44
+(x, y, t) (19.1159, 98.1559, 6.8367)
+edge_id 10
+label regular
+type N
+theta 168.9796
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 45
+(x, y, t) (15.9600, 98.7182, 6.5306)
+edge_id 10
+label regular
+type N
+theta 170.8163
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 46
+(x, y, t) (12.7877, 99.1790, 6.2245)
+edge_id 10
+label regular
+type N
+theta 172.6531
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 47
+(x, y, t) (9.6023, 99.5379, 5.9184)
+edge_id 10
+label regular
+type N
+theta 174.4898
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 48
+(x, y, t) (6.4070, 99.7945, 5.6122)
+edge_id 10
+label regular
+type N
+theta 176.3265
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 49
+(x, y, t) (3.2052, 99.9486, 5.3061)
+edge_id 10
+label regular
+type N
+theta 178.1633
+speed -10.4720
+End SAMPLE
+
+Begin SAMPLE
+sample_id 50
+(x, y, t) (0.0000, 100.0000, 5.0000)
+edge_id 10
+label regular
+type N
+theta 180.0000
+speed -10.4720
+End SAMPLE
+
