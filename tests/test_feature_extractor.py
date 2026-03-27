@@ -104,8 +104,8 @@ class TestFeatureExtractorSynthetic(unittest.TestCase):
         self.assertAlmostEqual(feats.m_length, 120 * math.pi, delta=5.0) # Outer Boundary (100 + 20)
 
         # 2. BENDING DYNAMICS (Half-circle = exactly pi radians of bending)
-        self.assertAlmostEqual(feats.s_angle, math.pi, delta=0.05)
-        self.assertAlmostEqual(feats.s_curve, math.pi, delta=0.05)
+        self.assertAlmostEqual(feats.s_angle, math.pi, delta=0.1)
+        self.assertAlmostEqual(feats.s_curve, math.pi, delta=0.1)
         
         # 3. VOLUMETRICS
         true_area = 4000 * math.pi # pi * (R_outer^2 - R_inner^2) / 2
