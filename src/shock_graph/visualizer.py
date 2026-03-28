@@ -2,12 +2,15 @@
 
 import math
 import os
+import random
 from typing import Optional
 
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from matplotlib.lines import Line2D
 from matplotlib.widgets import CheckButtons
+from matplotlib.patches import Circle
+from matplotlib.collections import PatchCollection
 
 from .structures import ShockGraph
 
@@ -27,26 +30,23 @@ class ShockVisualizer:
     @staticmethod
     def draw(
         graph: ShockGraph,
-        figsize: tuple = (12, 10),  # Made slightly wider to fit the buttons
+        figsize: tuple = (12, 10),
         save_path: Optional[str] = None,
         image_path: Optional[str] = None,
     ) -> None:
         """Plots the shock graph with nodes, edges, boundaries, and interactive toggles."""
         fig, ax = plt.subplots(figsize=figsize)
-        
-        # Shift the main plot to the right to make room for the UI toggles on the left
         plt.subplots_adjust(left=0.25)
 
         if image_path and os.path.exists(image_path):
             img = mpimg.imread(image_path)
             ax.imshow(img)
 
-        # Lists to store our plot objects so the toggles can find them
         all_p_lines = []
         all_m_lines = []
-        all_polys = []
+        all_disk_collections = []
 
-        # 1. Plot edges, directional arrows, and boundaries
+        # 1. Plot edges, directional arrows, boundaries, and shape reconstruction
         for edge in graph.edges:
             if not edge.samples:
                 continue
@@ -54,9 +54,10 @@ class ShockVisualizer:
             x_vals = [s.x for s in edge.samples]
             y_vals = [s.y for s in edge.samples]
 
-            # Plot the continuous shock spine in the original green
-            ax.plot(x_vals, y_vals, color='green', alpha=0.8, linewidth=2)
+            # --- SHOCK SPINE ---
+            ax.plot(x_vals, y_vals, color='green', alpha=0.8, linewidth=2, zorder=4)
 
+            # --- BOUNDARIES ---
             p_x, p_y = [], []
             m_x, m_y = [], []
             
@@ -69,22 +70,32 @@ class ShockVisualizer:
                 m_x.append(s.x + s.t * math.cos(m_angle))
                 m_y.append(s.y + s.t * math.sin(m_angle))
 
-            # Render the underlying Polygon (Plus forward + Minus backward)
-            poly_x = p_x + m_x[::-1]
-            poly_y = p_y + m_y[::-1]
-            # Default polygon to hidden (visible=False) to avoid initial clutter
-            poly = ax.fill(poly_x, poly_y, color='purple', alpha=0.2, visible=False)
-            all_polys.extend(poly)
-
-            # Plot boundaries and save references. The comma unpacking (line,) 
-            # extracts the Line2D object from the list returned by ax.plot()
-            p_line, = ax.plot(p_x, p_y, color='dodgerblue', alpha=0.8, linewidth=2 )
-            m_line, = ax.plot(m_x, m_y, color='crimson', alpha=0.8, linewidth=2 )
+            # Matched alpha to 0.8 and linewidth to 2 to equal the shock spine
+            p_line, = ax.plot(p_x, p_y, color='dodgerblue', alpha=0.8, linewidth=2, linestyle='--', zorder=3)
+            m_line, = ax.plot(m_x, m_y, color='crimson', alpha=0.8, linewidth=2, linestyle='--', zorder=3)
             
             all_p_lines.append(p_line)
             all_m_lines.append(m_line)
 
-            # Add directional arrow
+            # --- MAXIMAL DISKS (Reconstruction) ---
+            # Create a collection of circles for THIS specific edge
+            disk_patches = [Circle((s.x, s.y), s.t) for s in edge.samples]
+            
+            # Generate a random RGB color
+            edge_color = (random.random(), random.random(), random.random())
+            
+            disk_collection = PatchCollection(
+                disk_patches, 
+                facecolor=edge_color, 
+                alpha=0.4, 
+                edgecolor='none', 
+                visible=False,
+                zorder=2
+            )
+            ax.add_collection(disk_collection)
+            all_disk_collections.append(disk_collection)
+
+            # --- DIRECTIONAL ARROWS ---
             if len(edge.samples) >= 2:
                 mid_idx = len(edge.samples) // 2
                 mid_x, mid_y = x_vals[mid_idx], y_vals[mid_idx]
@@ -135,31 +146,29 @@ class ShockVisualizer:
         if not ax.yaxis_inverted():
             ax.invert_yaxis()
             
-        ax.set_title("Shock Graph & Reconstructed Boundaries", fontsize=14, weight='bold')
+        ax.set_title("Shock Graph & Shape Reconstruction", fontsize=14, weight='bold')
         ax.set_xlabel("X coordinate")
         ax.set_ylabel("Y coordinate")
         ax.grid(True, linestyle='--', alpha=0.5)
 
+        # Updated legend line widths to match
         legend_lines = [
             Line2D([0], [0], color='green', lw=2),
-            Line2D([0], [0], color='dodgerblue', lw=2 ),
-            Line2D([0], [0], color='crimson', lw=2 )
+            Line2D([0], [0], color='dodgerblue', lw=2, linestyle='--'),
+            Line2D([0], [0], color='crimson', lw=2, linestyle='--')
         ]
         ax.legend(legend_lines, ['Shock Spine', 'Plus Boundary (+)', 'Minus Boundary (-)'], loc='upper right')
 
         # ---------------------------------------------------------
         # 4. INTERACTIVE WIDGETS (CheckButtons)
         # ---------------------------------------------------------
-        # Define the axes location for the checkboxes [left, bottom, width, height]
-        ax_toggle = plt.axes([0.02, 0.4, 0.18, 0.15])
+        ax_toggle = plt.axes([0.02, 0.4, 0.20, 0.15])
         
-        # Labels and their initial states (True = Visible, False = Hidden)
-        labels = ['Plus (+)', 'Minus (-)', 'Polygons']
+        labels = ['Plus (+)', 'Minus (-)', 'Maximal Disks']
         visibility = [True, True, False]
         
         check = CheckButtons(ax_toggle, labels, visibility)
 
-        # Callback function to toggle visibility
         def toggle_visibility(label):
             if label == 'Plus (+)':
                 for line in all_p_lines:
@@ -167,19 +176,14 @@ class ShockVisualizer:
             elif label == 'Minus (-)':
                 for line in all_m_lines:
                     line.set_visible(not line.get_visible())
-            elif label == 'Polygons':
-                for poly in all_polys:
-                    poly.set_visible(not poly.get_visible())
+            elif label == 'Maximal Disks':
+                # Toggle every individual edge's collection
+                for collection in all_disk_collections:
+                    collection.set_visible(not collection.get_visible())
             
-            # Redraw the canvas to reflect the change
             fig.canvas.draw_idle()
 
-        # Connect the callback
         check.on_clicked(toggle_visibility)
-        
-        # CRITICAL: Attach the widget to the figure object. 
-        # If we don't do this, Python's garbage collector destroys the widget 
-        # as soon as the draw() method finishes, and the buttons won't click!
         fig.toggle_widget = check
 
         # 5. Display or Save
