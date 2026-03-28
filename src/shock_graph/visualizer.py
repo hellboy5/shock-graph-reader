@@ -1,4 +1,4 @@
-"""Visualizes shock graphs using Matplotlib."""
+"""Visualizes shock graphs using Matplotlib with interactive widgets."""
 
 import math
 import os
@@ -7,6 +7,7 @@ from typing import Optional
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from matplotlib.lines import Line2D
+from matplotlib.widgets import CheckButtons
 
 from .structures import ShockGraph
 
@@ -14,7 +15,6 @@ from .structures import ShockGraph
 class ShockVisualizer:
     """Handles the rendering of ShockGraph objects."""
 
-    # Reverse map to convert full types back to their single-character keys
     TYPE_REV_MAP = {
         'A3': 'A',
         'SOURCE': 'S',
@@ -27,26 +27,24 @@ class ShockVisualizer:
     @staticmethod
     def draw(
         graph: ShockGraph,
-        figsize: tuple = (10, 10),
+        figsize: tuple = (12, 10),  # Made slightly wider to fit the buttons
         save_path: Optional[str] = None,
         image_path: Optional[str] = None,
     ) -> None:
-        """Plots the shock graph with nodes, edges, directional arrows, and boundaries.
-
-        Args:
-            graph: The ShockGraph instance to visualize.
-            figsize: The dimensions of the matplotlib figure.
-            save_path: Optional file path to save the image instead of showing.
-            image_path: Optional file path to an underlying image to overlay the graph onto.
-        """
+        """Plots the shock graph with nodes, edges, boundaries, and interactive toggles."""
         fig, ax = plt.subplots(figsize=figsize)
+        
+        # Shift the main plot to the right to make room for the UI toggles on the left
+        plt.subplots_adjust(left=0.25)
 
-        # 0. Optionally render the background image
         if image_path and os.path.exists(image_path):
             img = mpimg.imread(image_path)
-            # Display image (Note: Matplotlib imshow defaults to y=0 at the top, 
-            # which typically matches computer vision image coordinates)
             ax.imshow(img)
+
+        # Lists to store our plot objects so the toggles can find them
+        all_p_lines = []
+        all_m_lines = []
+        all_polys = []
 
         # 1. Plot edges, directional arrows, and boundaries
         for edge in graph.edges:
@@ -59,32 +57,38 @@ class ShockVisualizer:
             # Plot the continuous shock spine in the original green
             ax.plot(x_vals, y_vals, color='green', alpha=0.8, linewidth=2)
 
-            # Reconstruct and plot the Plus and Minus Boundaries on the fly
             p_x, p_y = [], []
             m_x, m_y = [], []
             
             for s in edge.samples:
-                # Plus boundary (Left: theta + phi)
                 p_angle = s.theta + s.phi
                 p_x.append(s.x + s.t * math.cos(p_angle))
                 p_y.append(s.y + s.t * math.sin(p_angle))
                 
-                # Minus boundary (Right: theta - phi)
                 m_angle = s.theta - s.phi
                 m_x.append(s.x + s.t * math.cos(m_angle))
                 m_y.append(s.y + s.t * math.sin(m_angle))
 
-            # Plot boundaries with distinct color schemes
-            ax.plot(p_x, p_y, color='dodgerblue', alpha=0.6, linewidth=1.5, linestyle='--')
-            ax.plot(m_x, m_y, color='crimson', alpha=0.6, linewidth=1.5, linestyle='--')
+            # Render the underlying Polygon (Plus forward + Minus backward)
+            poly_x = p_x + m_x[::-1]
+            poly_y = p_y + m_y[::-1]
+            # Default polygon to hidden (visible=False) to avoid initial clutter
+            poly = ax.fill(poly_x, poly_y, color='purple', alpha=0.2, visible=False)
+            all_polys.extend(poly)
 
-            # Add directional arrow near the midpoint of the curve
+            # Plot boundaries and save references. The comma unpacking (line,) 
+            # extracts the Line2D object from the list returned by ax.plot()
+            p_line, = ax.plot(p_x, p_y, color='dodgerblue', alpha=0.8, linewidth=2 )
+            m_line, = ax.plot(m_x, m_y, color='crimson', alpha=0.8, linewidth=2 )
+            
+            all_p_lines.append(p_line)
+            all_m_lines.append(m_line)
+
+            # Add directional arrow
             if len(edge.samples) >= 2:
                 mid_idx = len(edge.samples) // 2
                 mid_x, mid_y = x_vals[mid_idx], y_vals[mid_idx]
                 
-                # Search backwards to find a point physically distant enough to draw a vector.
-                # This explicitly ignores clumps of identical "degenerate" points.
                 tail_idx = mid_idx - 1
                 while tail_idx >= 0:
                     dist = ((mid_x - x_vals[tail_idx])**2 + (mid_y - y_vals[tail_idx])**2) ** 0.5
@@ -92,7 +96,6 @@ class ShockVisualizer:
                         break
                     tail_idx -= 1
                 
-                # If we couldn't find a valid tail looking backwards, try looking forwards
                 if tail_idx < 0:
                     head_idx = mid_idx + 1
                     while head_idx < len(edge.samples):
@@ -100,12 +103,11 @@ class ShockVisualizer:
                         if dist > 2.0:
                             break
                         head_idx += 1
-                    
                     if head_idx < len(edge.samples):
                         tail_x, tail_y = mid_x, mid_y
                         head_x, head_y = x_vals[head_idx], y_vals[head_idx]
                     else:
-                        continue  # Edge is far too small to draw an arrow
+                        continue  
                 else:
                     tail_x, tail_y = x_vals[tail_idx], y_vals[tail_idx]
                     head_x, head_y = mid_x, mid_y
@@ -114,12 +116,7 @@ class ShockVisualizer:
                     '',
                     xy=(head_x, head_y),
                     xytext=(tail_x, tail_y),
-                    arrowprops=dict(
-                        arrowstyle="->",       
-                        color='green',      
-                        lw=2.0,
-                        mutation_scale=15,      
-                    ),
+                    arrowprops=dict(arrowstyle="->", color='green', lw=2.0, mutation_scale=15),
                     zorder=5,                   
                 )
 
@@ -129,47 +126,66 @@ class ShockVisualizer:
                 continue
 
             x, y = node.sample.x, node.sample.y
-
-            # Draw the node point
             ax.plot(x, y, marker='o', color='black', markersize=5, zorder=6)
-
-            # Retrieve the mapped single-character key
             short_type = ShockVisualizer.TYPE_REV_MAP.get(node.type, '?')
+            ax.text(x, y, f' {short_type}:{node.id}', fontsize=8, color='black', weight='bold', va='bottom', ha='left', zorder=7)
 
-            # Label the node using the shorter key (smaller font size)
-            ax.text(
-                x,
-                y,
-                f' {short_type}:{node.id}',
-                fontsize=8,
-                color='black',
-                weight='bold',
-                va='bottom',
-                ha='left',
-                zorder=7
-            )
-
-        # 3. Format the plot
+        # 3. Format the main plot
         ax.set_aspect('equal', adjustable='box')
+        if not ax.yaxis_inverted():
+            ax.invert_yaxis()
+            
         ax.set_title("Shock Graph & Reconstructed Boundaries", fontsize=14, weight='bold')
         ax.set_xlabel("X coordinate")
         ax.set_ylabel("Y coordinate")
         ax.grid(True, linestyle='--', alpha=0.5)
 
-        # Add a custom legend to define the color scheme
         legend_lines = [
             Line2D([0], [0], color='green', lw=2),
-            Line2D([0], [0], color='dodgerblue', lw=1.5, linestyle='--'),
-            Line2D([0], [0], color='crimson', lw=1.5, linestyle='--')
+            Line2D([0], [0], color='dodgerblue', lw=2 ),
+            Line2D([0], [0], color='crimson', lw=2 )
         ]
         ax.legend(legend_lines, ['Shock Spine', 'Plus Boundary (+)', 'Minus Boundary (-)'], loc='upper right')
 
-        # 4. Display or Save
+        # ---------------------------------------------------------
+        # 4. INTERACTIVE WIDGETS (CheckButtons)
+        # ---------------------------------------------------------
+        # Define the axes location for the checkboxes [left, bottom, width, height]
+        ax_toggle = plt.axes([0.02, 0.4, 0.18, 0.15])
+        
+        # Labels and their initial states (True = Visible, False = Hidden)
+        labels = ['Plus (+)', 'Minus (-)', 'Polygons']
+        visibility = [True, True, False]
+        
+        check = CheckButtons(ax_toggle, labels, visibility)
+
+        # Callback function to toggle visibility
+        def toggle_visibility(label):
+            if label == 'Plus (+)':
+                for line in all_p_lines:
+                    line.set_visible(not line.get_visible())
+            elif label == 'Minus (-)':
+                for line in all_m_lines:
+                    line.set_visible(not line.get_visible())
+            elif label == 'Polygons':
+                for poly in all_polys:
+                    poly.set_visible(not poly.get_visible())
+            
+            # Redraw the canvas to reflect the change
+            fig.canvas.draw_idle()
+
+        # Connect the callback
+        check.on_clicked(toggle_visibility)
+        
+        # CRITICAL: Attach the widget to the figure object. 
+        # If we don't do this, Python's garbage collector destroys the widget 
+        # as soon as the draw() method finishes, and the buttons won't click!
+        fig.toggle_widget = check
+
+        # 5. Display or Save
         if save_path:
             plt.savefig(save_path, bbox_inches='tight')
             print(f"Graph successfully saved to {save_path}")
-            # Only close the figure if we are saving headless!
             plt.close(fig)
         else:
-            # Leave the figure open for the interactive widget
             plt.show()
