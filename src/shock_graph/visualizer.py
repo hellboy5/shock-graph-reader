@@ -9,8 +9,6 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from matplotlib.lines import Line2D
 from matplotlib.widgets import CheckButtons
-from matplotlib.patches import Circle
-from matplotlib.collections import PatchCollection
 
 from .structures import ShockGraph
 
@@ -44,7 +42,7 @@ class ShockVisualizer:
 
         all_p_lines = []
         all_m_lines = []
-        all_disk_collections = []
+        all_polys = []
 
         # 1. Plot edges, directional arrows, boundaries, and shape reconstruction
         for edge in graph.edges:
@@ -70,30 +68,24 @@ class ShockVisualizer:
                 m_x.append(s.x + s.t * math.cos(m_angle))
                 m_y.append(s.y + s.t * math.sin(m_angle))
 
-            # Matched alpha to 0.8 and linewidth to 2 to equal the shock spine
-            p_line, = ax.plot(p_x, p_y, color='dodgerblue', alpha=0.8, linewidth=2, linestyle='--', zorder=3)
-            m_line, = ax.plot(m_x, m_y, color='crimson', alpha=0.8, linewidth=2, linestyle='--', zorder=3)
+            # Changed linestyle to solid ('-')
+            p_line, = ax.plot(p_x, p_y, color='dodgerblue', alpha=0.8, linewidth=2, linestyle='-', zorder=3)
+            m_line, = ax.plot(m_x, m_y, color='crimson', alpha=0.8, linewidth=2, linestyle='-', zorder=3)
             
             all_p_lines.append(p_line)
             all_m_lines.append(m_line)
 
-            # --- MAXIMAL DISKS (Reconstruction) ---
-            # Create a collection of circles for THIS specific edge
-            disk_patches = [Circle((s.x, s.y), s.t) for s in edge.samples]
+            # --- POLYGON (Reconstruction) ---
+            # Walk forward down the Plus boundary, and backward up the Minus boundary
+            # to create a perfectly closed, continuous perimeter
+            poly_x = p_x + m_x[::-1]
+            poly_y = p_y + m_y[::-1]
             
-            # Generate a random RGB color
+            # Generate a random RGB color for this specific edge's polygon
             edge_color = (random.random(), random.random(), random.random())
             
-            disk_collection = PatchCollection(
-                disk_patches, 
-                facecolor=edge_color, 
-                alpha=0.4, 
-                edgecolor='none', 
-                visible=False,
-                zorder=2
-            )
-            ax.add_collection(disk_collection)
-            all_disk_collections.append(disk_collection)
+            poly = ax.fill(poly_x, poly_y, color=edge_color, alpha=0.4, visible=False, zorder=2)
+            all_polys.extend(poly)
 
             # --- DIRECTIONAL ARROWS ---
             if len(edge.samples) >= 2:
@@ -151,11 +143,11 @@ class ShockVisualizer:
         ax.set_ylabel("Y coordinate")
         ax.grid(True, linestyle='--', alpha=0.5)
 
-        # Updated legend line widths to match
+        # Updated legend to reflect solid lines
         legend_lines = [
             Line2D([0], [0], color='green', lw=2),
-            Line2D([0], [0], color='dodgerblue', lw=2, linestyle='--'),
-            Line2D([0], [0], color='crimson', lw=2, linestyle='--')
+            Line2D([0], [0], color='dodgerblue', lw=2, linestyle='-'),
+            Line2D([0], [0], color='crimson', lw=2, linestyle='-')
         ]
         ax.legend(legend_lines, ['Shock Spine', 'Plus Boundary (+)', 'Minus Boundary (-)'], loc='upper right')
 
@@ -164,7 +156,7 @@ class ShockVisualizer:
         # ---------------------------------------------------------
         ax_toggle = plt.axes([0.02, 0.4, 0.20, 0.15])
         
-        labels = ['Plus (+)', 'Minus (-)', 'Maximal Disks']
+        labels = ['Plus (+)', 'Minus (-)', 'Polygons']
         visibility = [True, True, False]
         
         check = CheckButtons(ax_toggle, labels, visibility)
@@ -176,10 +168,9 @@ class ShockVisualizer:
             elif label == 'Minus (-)':
                 for line in all_m_lines:
                     line.set_visible(not line.get_visible())
-            elif label == 'Maximal Disks':
-                # Toggle every individual edge's collection
-                for collection in all_disk_collections:
-                    collection.set_visible(not collection.get_visible())
+            elif label == 'Polygons':
+                for poly in all_polys:
+                    poly.set_visible(not poly.get_visible())
             
             fig.canvas.draw_idle()
 
