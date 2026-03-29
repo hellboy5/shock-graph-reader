@@ -78,6 +78,11 @@ def main() -> None:
         help="Visualize the shock graph overlaid on its corresponding underlying image."
     )
     parser.add_argument(
+        "--debug", 
+        action="store_true", 
+        help="Enable debug visualization (includes IDs, boundaries, and outlines)."
+    )
+    parser.add_argument(
         "-c", "--coarse", 
         action="store_true", 
         help="Coarsen the graph by merging degree-2 pass-through nodes."
@@ -128,7 +133,9 @@ def main() -> None:
                 print(f"\nWarning: '--overlay' was requested, but no image matching '{base_path}.[png|jpg]' was found.")
                 print("Rendering the shock graph on a blank canvas instead.\n")
 
-        ShockVisualizer.draw(graph, image_path=image_path)
+        # Determine mode: default is 'minimal', triggered to 'debug' by flag
+        viz_mode = 'debug' if args.debug else 'minimal'
+        ShockVisualizer.draw(graph, mode=viz_mode, image_path=image_path)
 
     # 6. Determine Output Path
     out_path = args.output
