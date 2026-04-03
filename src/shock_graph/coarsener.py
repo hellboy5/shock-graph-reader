@@ -10,28 +10,27 @@ class GraphCoarsener:
 
     @staticmethod
     def coarsen(graph: ShockGraph) -> ShockGraph:
-        """Merges pure pass-through degree-2 JUNCT nodes into single edges."""
+        """Merges all degree-2 nodes regardless of flow direction or type.
+        
+        Because upstream C++ pruning removes pure 1-in/1-out flow junctions, 
+        any remaining degree-2 nodes (e.g., 2-in SINKs or 2-out SOURCEs) are 
+        flow-terminating but structurally pass-through. This performs a purely 
+        topological extraction of the skeleton's branching structure.
+        """
         kept_nodes_ids: Set[int] = set()
 
-        # 1. Identify Kept Nodes using native Node properties
+        # 1. Identify Anchor Nodes (Strictly topological: degree != 2)
         for node_id, node in graph.nodes.items():
-            # Rule 1: Keep Degree 1 and Degree 3+
             if node.degree != 2:
                 kept_nodes_ids.add(node_id)
-            # Rule 2: Keep SOURCE, SINK, TERMINAL, A3 (Only merge pure JUNCT)
-            elif node.type in ['SOURCE', 'SINK', 'TERMINAL', 'A3']:
-                kept_nodes_ids.add(node_id)
-            # Rule 3: Must be a perfect 1-in, 1-out flow to be merged
-            elif node.in_degree != 1 or node.out_degree != 1:
-                kept_nodes_ids.add(node_id)
 
-        # 2. Create FRESH Node instances to reset their connectivity lists
+        # 2. Create FRESH Node instances
         new_nodes: Dict[int, Node] = {}
         for nid in kept_nodes_ids:
             old_node = graph.nodes[nid]
+            # Keep original type, though its geometric meaning may now be ambiguous
             new_node = Node(node_id=old_node.id, node_type=old_node.type)
             new_node.sample = old_node.sample
-            # Start with a clean slate to prevent dangling pointers
             new_node._cw_neighbors = [] 
             new_nodes[nid] = new_node
 
@@ -39,47 +38,56 @@ class GraphCoarsener:
         visited_edges: Set[Edge] = set()
         edge_id_counter = 0
 
-        # 3. Trace paths from all kept nodes to build new edges
+        # 3. Trace Undirected Paths from Anchor Nodes
         for start_id in kept_nodes_ids:
             start_node = graph.nodes[start_id]
+            all_incident_edges = start_node.incoming_edges + start_node.outgoing_edges
             
-            for start_edge in start_node.outgoing_edges:
+            for start_edge in all_incident_edges:
                 if start_edge in visited_edges:
                     continue
 
-                current_edge = start_edge
-                # Start the merged sequence with the first edge's sample points
-                merged_samples = list(current_edge.samples)
+                active_edge = start_edge
+                current_node = start_node
+                visited_edges.add(active_edge)
                 
-                while True:
-                    visited_edges.add(current_edge)
-                    next_node = current_edge.target
-
-                    # If we hit a kept node, the path is complete
-                    if next_node.id in kept_nodes_ids:
-                        merged_edge = Edge(
-                            edge_id=edge_id_counter,
-                            source=new_nodes[start_id],  # Pointing to the NEW node
-                            target=new_nodes[next_node.id], # Pointing to the NEW node
-                            samples=merged_samples
-                        )
-                        new_edges.append(merged_edge)
-                        edge_id_counter += 1
-                        break
-
-                    # Move to the next edge in the pass-through chain
-                    # (Guaranteed exactly 1 outgoing edge by Rule 3)
-                    current_edge = next_node.outgoing_edges[0]
+                # Initialize the merged samples array and determine step direction
+                if current_node == active_edge.source:
+                    merged_samples = list(active_edge.samples)
+                    current_node = active_edge.target
+                else:
+                    merged_samples = list(reversed(active_edge.samples))
+                    current_node = active_edge.source
+                
+                # Walk the chain until we hit another anchor node
+                while current_node.id not in kept_nodes_ids:
+                    # Degree is guaranteed to be 2 here
+                    incident = current_node.incoming_edges + current_node.outgoing_edges
+                    next_edge = incident[0] if incident[0] != active_edge else incident[1]
                     
-                    # Extend the curve, but skip the first sample of the new edge 
-                    # because it is identical to the last sample of the previous edge!
-                    merged_samples.extend(current_edge.samples[1:])
+                    active_edge = next_edge
+                    visited_edges.add(active_edge)
+                    
+                    # Extend samples, dropping index 0 to avoid duplicating the joint
+                    if current_node == active_edge.source:
+                        merged_samples.extend(active_edge.samples[1:])
+                        current_node = active_edge.target
+                    else:
+                        merged_samples.extend(list(reversed(active_edge.samples))[1:])
+                        current_node = active_edge.source
 
-                    # Cycle protection (prevents infinite loops on closed circles)
-                    if current_edge in visited_edges:
-                        break
+                # We hit an anchor node. Create the new arbitrary-direction edge
+                merged_edge = Edge(
+                    edge_id=edge_id_counter,
+                    source=new_nodes[start_id],       # Start of our traversal
+                    target=new_nodes[current_node.id], # End of our traversal
+                    samples=merged_samples
+                )
+                new_edges.append(merged_edge)
+                edge_id_counter += 1
 
-        # 4. Remap Clockwise Neighbors safely (Preserves exact planar ordering)
+        # 4. Remap Clockwise Neighbors safely
+        # The CW list maps naturally through degree-2 nodes regardless of direction
         for nid, new_node in new_nodes.items():
             old_node = graph.nodes[nid]
             for old_neighbor_id in old_node.get_cw_neighbors():
@@ -88,29 +96,25 @@ class GraphCoarsener:
                 
                 visited_for_cycle = set()
                 
-                # Fast-forward through degree-2 nodes until we hit a kept node
                 while current_id not in kept_nodes_ids:
                     if current_id in visited_for_cycle:
-                        break # Failsafe: We hit an infinite loop in corrupted data
+                        break 
                     visited_for_cycle.add(current_id)
                     
                     deg2_node = graph.nodes[current_id]
                     neighbors = deg2_node.get_cw_neighbors()
                     
-                    # A pure degree-2 node should have exactly 2 neighbors.
                     if len(neighbors) == 2:
                         next_id = neighbors[0] if neighbors[0] != prev_id else neighbors[1]
                     else:
-                        break # Fallback for corrupted planar data
+                        break 
                         
                     prev_id = current_id
                     current_id = next_id
                     
-                # We reached the end of the chain; register the valid kept node
                 if current_id in kept_nodes_ids:
                     new_node.add_neighbor(current_id)
 
-        # 5. Return the newly compressed graph
         coarsened_graph = ShockGraph()
         coarsened_graph.nodes = new_nodes
         coarsened_graph.edges = new_edges
