@@ -57,9 +57,9 @@ def main() -> None:
     parser.add_argument(
         "-f", "--format", 
         type=str, 
-        choices=["pyg", "dgl", "nx"], 
+        choices=["pyg", "nx"], 
         default="pyg",
-        help="Target export format: 'pyg', 'dgl', or 'nx'. Defaults to 'pyg'."
+        help="Target export format: 'pyg' or 'nx'. Defaults to 'pyg'."
     )
     parser.add_argument(
         "-o", "--output", 
@@ -85,7 +85,12 @@ def main() -> None:
     parser.add_argument(
         "-c", "--coarse", 
         action="store_true", 
-        help="Coarsen the graph by merging degree-2 pass-through nodes."
+        help="Coarsen the graph by merging degree-2 nodes."
+    )
+    parser.add_argument(
+        "-b", "--bidirectional", 
+        action="store_true", 
+        help="Force manual bidirectional edge generation (GNN message passing). Default is False."
     )
 
     args = parser.parse_args()
@@ -141,19 +146,19 @@ def main() -> None:
     out_path = args.output
     if not out_path:
         base_name, _ = os.path.splitext(args.input_file)
-        extension_map = {"pyg": ".pt", "dgl": ".dgl", "nx": ".graphml"}
+        extension_map = {"pyg": ".pt", "nx": ".graphml"}
         suffix = "_coarse" if args.coarse else ""
         out_path = f"{base_name}{suffix}{extension_map[args.format]}"
 
     # 7. Export
     print(f"Exporting to {args.format.upper()} format at {out_path}...")
+    print(f"  - Bidirectional: {args.bidirectional}")
+    
     try:
         if args.format == "pyg":
-            GraphConverter.save_pytorch_geometric(graph, out_path)
-        elif args.format == "dgl":
-            GraphConverter.save_dgl(graph, out_path)
+            GraphConverter.save_pytorch_geometric(graph, out_path, coarsened=args.coarse, bidirectional=args.bidirectional)
         elif args.format == "nx":
-            GraphConverter.save_networkx(graph, out_path)
+            GraphConverter.save_networkx(graph, out_path, coarsened=args.coarse, bidirectional=args.bidirectional)
     except ImportError as e:
         print(f"\nExport Failed: {e}")
         print("Please ensure the requested ML framework is installed in your environment.")
