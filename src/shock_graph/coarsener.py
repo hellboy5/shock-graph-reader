@@ -1,5 +1,7 @@
 """Graph coarsening utilities to compress degree-2 chains."""
 
+import math
+from copy import copy
 from typing import Dict, List, Set, Tuple
 
 from .structures import Edge, Node, ShockGraph
@@ -125,9 +127,12 @@ class GraphCoarsener:
                     set([e2.source.id, e2.target.id])
                 )
                 
-                if shared_nodes:
-                    # DETERMINISM FIX 5: Sort the shared nodes before grabbing the first one
-                    split_node_id = sorted(list(shared_nodes))[0]
+                # TOPOLOGY FIX 1: Prevent anchors from being selected as the split point in short loops.
+                valid_midpoints = shared_nodes - {start_id, end_id}
+                
+                if valid_midpoints:
+                    # DETERMINISM FIX 5: Sort the valid nodes before grabbing the first one
+                    split_node_id = sorted(list(valid_midpoints))[0]
                     
                     # Promote the midpoint to an Anchor
                     kept_nodes_ids.add(split_node_id)
@@ -141,8 +146,18 @@ class GraphCoarsener:
                     
                     established_pairs.add(tuple(sorted([start_id, split_node_id])))
                     established_pairs.add(tuple(sorted([split_node_id, end_id])))
+                elif shared_nodes:
+                    # Failsafe fallback
+                    split_node_id = sorted(list(shared_nodes))[0]
+                    kept_nodes_ids.add(split_node_id)
+                    path1 = path_edges[:mid_idx]
+                    path2 = path_edges[mid_idx:]
+                    final_macro_paths.append((start_id, split_node_id, path1))
+                    final_macro_paths.append((split_node_id, end_id, path2))
+                    established_pairs.add(tuple(sorted([start_id, split_node_id])))
+                    established_pairs.add(tuple(sorted([split_node_id, end_id])))
                 else:
-                    # Failsafe in case of severe corruption
+                    # Absolute failsafe in case of severe corruption
                     final_macro_paths.append((start_id, end_id, path_edges))
             else:
                 final_macro_paths.append((start_id, end_id, path_edges))
@@ -156,6 +171,11 @@ class GraphCoarsener:
             new_node = Node(node_id=old_node.id, node_type=old_node.type)
             new_node.sample = old_node.sample
             new_node._cw_neighbors = [] 
+            
+            # TOPOLOGY FIX 2: Initialize topological bindings for converter.py struct_feats
+            new_node.incoming_edges = []
+            new_node.outgoing_edges = []
+            
             new_nodes[nid] = new_node
 
         # 5. Build the new edges
@@ -168,16 +188,40 @@ class GraphCoarsener:
             
             for edge in path_edges:
                 if current_node_id == edge.source.id:
+                    # --- FORWARD TRAVERSAL ---
+                    # Ensure we create copies so we don't share memory references with the uncoarsened graph
+                    samples_to_add = [copy(s) for s in edge.samples]
+                    
                     if not merged_samples:
-                        merged_samples.extend(edge.samples)
+                        merged_samples.extend(samples_to_add)
                     else:
-                        merged_samples.extend(edge.samples[1:])
+                        # Skip the duplicated junction node for continuous geometry
+                        merged_samples.extend(samples_to_add[1:])
+                        
                     current_node_id = edge.target.id
+                    
                 else:
+                    # --- BACKWARD TRAVERSAL (Directional Math Fix) ---
+                    samples_to_add = []
+                    
+                    for s in reversed(edge.samples):
+                        # Create a copy so we don't mutate the original graph data
+                        s_flipped = copy(s) 
+                        
+                        # 1. Flip the tangent vector by 180 degrees
+                        s_flipped.theta = (s_flipped.theta + math.pi) % (2 * math.pi)
+                        
+                        # 2. Invert the flow angle (pi - original_phi)
+                        s_flipped.phi = math.pi - s_flipped.phi
+                        
+                        samples_to_add.append(s_flipped)
+                    
                     if not merged_samples:
-                        merged_samples.extend(list(reversed(edge.samples)))
+                        merged_samples.extend(samples_to_add)
                     else:
-                        merged_samples.extend(list(reversed(edge.samples))[1:])
+                        # Skip the duplicated junction node for continuous geometry
+                        merged_samples.extend(samples_to_add[1:])
+                        
                     current_node_id = edge.source.id
                     
             merged_edge = Edge(
@@ -187,6 +231,11 @@ class GraphCoarsener:
                 samples=merged_samples
             )
             new_edges.append(merged_edge)
+            
+            # TOPOLOGY FIX 2 (Continued): Bind edges to nodes so node.degree calculates correctly downstream
+            new_nodes[start_id].outgoing_edges.append(merged_edge)
+            new_nodes[end_id].incoming_edges.append(merged_edge)
+            
             edge_id_counter += 1
 
         # 6. Remap Clockwise Neighbors (Preserving Planar Ordering)
