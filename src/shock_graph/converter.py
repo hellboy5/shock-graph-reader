@@ -73,7 +73,14 @@ class GraphConverter:
         edge_indices: List[Tuple[int, int]] = []
         edge_features: List[List[float]] = []
 
-        for edge in graph.edges:
+        # DETERMINISM FIX: Sort the edges based on their new contiguous source/target IDs
+        # This guarantees the PyTorch edge_index tensor rows are mathematically locked.
+        sorted_edges = sorted(
+            graph.edges, 
+            key=lambda e: (node_to_idx[e.source.id], node_to_idx[e.target.id])
+        )
+
+        for edge in sorted_edges:
             src_idx = node_to_idx[edge.source.id]
             tgt_idx = node_to_idx[edge.target.id]
             
