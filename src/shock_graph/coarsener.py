@@ -1,5 +1,6 @@
 """Graph coarsening utilities to compress degree-2 chains."""
 
+import dataclasses
 import math
 from copy import copy
 from typing import Dict, List, Set, Tuple
@@ -171,11 +172,8 @@ class GraphCoarsener:
             new_node = Node(node_id=old_node.id, node_type=old_node.type)
             new_node.sample = old_node.sample
             new_node._cw_neighbors = [] 
-            
-            # TOPOLOGY FIX 2: Initialize topological bindings for converter.py struct_feats
-            new_node.incoming_edges = []
-            new_node.outgoing_edges = []
-            
+            # Note: We do NOT initialize new_node.incoming_edges here, 
+            # because structures.py already does it cleanly during Node.__init__.
             new_nodes[nid] = new_node
 
         # 5. Build the new edges
@@ -205,14 +203,12 @@ class GraphCoarsener:
                     samples_to_add = []
                     
                     for s in reversed(edge.samples):
-                        # Create a copy so we don't mutate the original graph data
-                        s_flipped = copy(s) 
                         
-                        # 1. Flip the tangent vector by 180 degrees
-                        s_flipped.theta = (s_flipped.theta + math.pi) % (2 * math.pi)
+                        new_theta = (s.theta + math.pi) % (2 * math.pi)
+                        new_phi = math.pi - s.phi
                         
-                        # 2. Invert the flow angle (pi - original_phi)
-                        s_flipped.phi = math.pi - s_flipped.phi
+                        # SAFELY replace fields on the frozen dataclass
+                        s_flipped = dataclasses.replace(s, theta=new_theta, phi=new_phi)
                         
                         samples_to_add.append(s_flipped)
                     
@@ -224,6 +220,8 @@ class GraphCoarsener:
                         
                     current_node_id = edge.source.id
                     
+            # The Edge.__init__ inside structures.py automatically handles binding 
+            # this new merged_edge to new_nodes[start_id] and new_nodes[end_id]
             merged_edge = Edge(
                 edge_id=edge_id_counter,
                 source=new_nodes[start_id],
@@ -231,11 +229,6 @@ class GraphCoarsener:
                 samples=merged_samples
             )
             new_edges.append(merged_edge)
-            
-            # TOPOLOGY FIX 2 (Continued): Bind edges to nodes so node.degree calculates correctly downstream
-            new_nodes[start_id].outgoing_edges.append(merged_edge)
-            new_nodes[end_id].incoming_edges.append(merged_edge)
-            
             edge_id_counter += 1
 
         # 6. Remap Clockwise Neighbors (Preserving Planar Ordering)
