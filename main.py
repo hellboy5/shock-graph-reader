@@ -147,7 +147,8 @@ def main() -> None:
 
         # Determine mode: default is 'minimal', triggered to 'debug' by flag
         viz_mode = 'debug' if args.debug else 'minimal'
-        ShockVisualizer.draw(graph, mode=viz_mode, image_path=image_path)
+        ShockVisualizer.draw(graph, coarsened=args.coarse, mode=viz_mode, image_path=image_path)
+
 
     # 6. Determine Output Path
     out_path = args.output
