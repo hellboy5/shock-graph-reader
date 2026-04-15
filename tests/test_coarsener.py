@@ -24,18 +24,22 @@ class TestGraphCoarsener(unittest.TestCase):
     def _get_reducible_deg2_nodes(self, graph: ShockGraph) -> list:
         """Helper to find pure degree-2 nodes that SHOULD have been coarsened.
         
+        Evaluates purely on undirected topology, ignoring arbitrary Flow labels.
         Ignores degree-2 nodes that were deliberately promoted to Anchors 
         by the Midpoint Protocol to prevent illegal multigraphs or infinite loops.
         """
         reducible_nodes = []
         for node in graph.nodes.values():
-            if (node.degree == 2 and 
-                node.in_degree == 1 and 
-                node.out_degree == 1 and 
-                node.type not in ['SOURCE', 'SINK', 'TERMINAL', 'A3']):
+            # Treat the graph as undirected for topological assessment
+            if node.degree == 2:
+                incident = node.incoming_edges + node.outgoing_edges
                 
-                n1 = node.incoming_edges[0].source
-                n2 = node.outgoing_edges[0].target
+                if len(incident) != 2:
+                    continue # Safety failsafe
+                
+                # Identify the actual neighbor nodes, regardless of edge direction
+                n1 = incident[0].source if incident[0].target == node else incident[0].target
+                n2 = incident[1].source if incident[1].target == node else incident[1].target
                 
                 # If collapsing this node creates a self-loop (n1 == n2), it was deliberately saved.
                 if n1.id == n2.id:
@@ -43,12 +47,9 @@ class TestGraphCoarsener(unittest.TestCase):
                     
                 # If collapsing this node creates parallel edges, it was deliberately saved.
                 is_parallel_risk = False
-                for e in n1.outgoing_edges:
-                    if e.target.id == n2.id:
-                        is_parallel_risk = True
-                        break
-                for e in n2.outgoing_edges:
-                    if e.target.id == n1.id:
+                for e in n1.incoming_edges + n1.outgoing_edges:
+                    other_node = e.source if e.target == n1 else e.target
+                    if other_node.id == n2.id and e not in incident:
                         is_parallel_risk = True
                         break
                         
