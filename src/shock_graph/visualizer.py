@@ -29,7 +29,8 @@ class ShockVisualizer:
     @staticmethod
     def draw(
         graph: ShockGraph,
-        mode: str = 'minimal', # 'minimal' or 'debug'
+        coarsened: bool = False,  # Determines label types and arrow visibility
+        mode: str = 'minimal',    # 'minimal' or 'debug'
         figsize: tuple = (12, 10),
         save_path: Optional[str] = None,
         image_path: Optional[str] = None,
@@ -87,8 +88,8 @@ class ShockVisualizer:
                 outline, = ax.plot(loop_x, loop_y, color=path_color, alpha=0.9, linewidth=2, visible=False, zorder=2)
                 all_outline_loops.append(outline)
 
-            # --- ROBUST DIRECTIONAL ARROWS (Always Show) ---
-            if len(edge.samples) >= 2:
+            # --- ROBUST DIRECTIONAL ARROWS (Only if uncoarsened) ---
+            if not coarsened and len(edge.samples) >= 2:
                 mid_idx = len(edge.samples) // 2
                 mid_x, mid_y = x_vals[mid_idx], y_vals[mid_idx]
                 tail_idx = mid_idx - 1
@@ -114,6 +115,7 @@ class ShockVisualizer:
                             zorder=5)
 
         # 2. Process Nodes (Markers + ID Labels)
+        # Reverted back to the original color scheme
         node_color = 'green' if mode == 'minimal' else 'black'
         used_types = set()
 
@@ -124,7 +126,14 @@ class ShockVisualizer:
             x, y = node.sample.x, node.sample.y
             ax.plot(x, y, marker='o', color=node_color, markersize=5, zorder=6)
 
-            short_type, full_desc = ShockVisualizer.TYPE_REV_MAP.get(node.type, ('U', 'Unknown'))
+            if coarsened:
+                # Structural representation for coarsened graphs
+                short_type = f"D{node.degree}"
+                full_desc = f"Degree {node.degree} Node"
+            else:
+                # Biological Flow representation for raw graphs
+                short_type, full_desc = ShockVisualizer.TYPE_REV_MAP.get(node.type, ('U', 'Unknown'))
+                
             used_types.add((short_type, full_desc))
 
             # Minimal: Type only | Debug: Type + ID
@@ -136,7 +145,8 @@ class ShockVisualizer:
         ax.set_aspect('equal', adjustable='box')
         if not ax.yaxis_inverted(): ax.invert_yaxis()
             
-        ax.set_title(f"Shock Graph Analysis ({mode.capitalize()})", fontsize=14, weight='bold')
+        title_suffix = "Coarsened" if coarsened else "Raw"
+        ax.set_title(f"Shock Graph Analysis ({mode.capitalize()} | {title_suffix})", fontsize=14, weight='bold')
 
         # Legend building
         legend_lines = [Line2D([0], [0], color='green', lw=2, label='Shock Spine')]
