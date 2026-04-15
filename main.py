@@ -121,21 +121,28 @@ def main() -> None:
     if args.visualize or args.overlay:
         print("Opening visualizer...")
         image_path = None
+
         
         # If overlay is requested, try to find a matching image file
         if args.overlay:
-            base_path = os.path.splitext(args.input_file)[0]
-            valid_extensions = ['.png', '.jpg', '.jpeg', '.bmp']
+            target_dir = os.path.dirname(args.input_file) or '.'
+            target_base = os.path.basename(os.path.splitext(args.input_file)[0])
+            valid_extensions = {'.png', '.jpg', '.jpeg', '.bmp'}
             
-            for ext in valid_extensions:
-                if os.path.exists(base_path + ext):
-                    image_path = base_path + ext
-                    print(f"Found corresponding image: {image_path}")
-                    break
+            try:
+                for filename in os.listdir(target_dir):
+                    name, ext = os.path.splitext(filename)
+                    # Match exact base name, but allow case-insensitive extensions (e.g., .PNG, .Jpg)
+                    if name == target_base and ext.lower() in valid_extensions:
+                        image_path = os.path.join(target_dir, filename)
+                        print(f"Found corresponding image: {image_path}")
+                        break
+            except OSError as e:
+                print(f"Error reading directory for overlay images: {e}")
             
             # Print a graceful warning if missing, but continue rendering
             if not image_path:
-                print(f"\nWarning: '--overlay' was requested, but no image matching '{base_path}.[png|jpg]' was found.")
+                print(f"\nWarning: '--overlay' was requested, but no image matching '{target_base}.[png|jpg]' was found.")
                 print("Rendering the shock graph on a blank canvas instead.\n")
 
         # Determine mode: default is 'minimal', triggered to 'debug' by flag
