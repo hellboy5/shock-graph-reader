@@ -6,4 +6,3 @@ matplotlib>=3.7.0
 networkx>=3.0
 torch>=2.0.0
 torch_geometric>=2.3.0
-dgl>=2.0.0
